@@ -512,6 +512,10 @@ function doGet(e) {
         const GOOGLE_SHEET_ID = '1ppxAhozZszl8_x8qRSy9EKTDhsgrx5RE8QW23k5CYTI';
         const DEFAULT_GS_URL = 'https://script.google.com/macros/s/AKfycbz2QakyRjmrfU5bw9fB1oVJqVYveYSXJZIEDg5MH6pDR1Nvcx3P2DHbEj3gJjahpxX8Gg/exec';
 
+        // Google Drive Background Template URL & ID
+        const DEFAULT_BG_DRIVE_ID = '1XH14yN_eD9ooKvpHFJhH-SXZdgaYB5ru';
+        const DEFAULT_BG_URL = `https://lh3.googleusercontent.com/d/${DEFAULT_BG_DRIVE_ID}`;
+
         const state = {
             // Donor List
             donors: [
@@ -663,8 +667,8 @@ function doGet(e) {
             // Load saved layout & position parameters
             loadSavedElementConfig();
 
-            // Generate Default Mock Background Template on startup
-            createDefaultTemplateImage();
+            // Load Default Background Image from Google Drive on startup
+            loadDefaultTemplateImage();
 
             // Load Form Data
             loadDonorToForm(0);
@@ -679,10 +683,26 @@ function doGet(e) {
         }
 
         /**
-         * STREAMING_CHUNK:Drawing default canvas background template...
-         * Generate Default Certificate Background
+         * Load Default Background Image from Google Drive
          */
-        function createDefaultTemplateImage() {
+        function loadDefaultTemplateImage() {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = function() {
+                state.bgImage = img;
+                renderCanvas();
+            };
+            img.onerror = function() {
+                console.warn('Could not load Google Drive image directly, falling back to procedural template.');
+                createProceduralTemplateImage();
+            };
+            img.src = DEFAULT_BG_URL;
+        }
+
+        /**
+         * Fallback Procedural Template Generator
+         */
+        function createProceduralTemplateImage() {
             const offscreen = document.createElement('canvas');
             offscreen.width = CANVAS_WIDTH;
             offscreen.height = CANVAS_HEIGHT;
@@ -993,7 +1013,7 @@ function doGet(e) {
 
             // Reset Default Background
             btnResetBg.addEventListener('click', () => {
-                createDefaultTemplateImage();
+                loadDefaultTemplateImage();
                 showToast('รีเซ็ตแม่แบบเริ่มต้นเรียบร้อย');
             });
 
