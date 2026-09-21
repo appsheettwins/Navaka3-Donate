@@ -428,15 +428,17 @@ function doGet(e) {
     var rows = sheet.getDisplayValues();
     var donors = [];
     for (var i = 1; i < rows.length; i++) {
-      donors.push({
-        serial: rows[i][0] || '',
-        name: rows[i][1] || '',
-        amountNum: parseFloat(rows[i][2].toString().replace(/,/g, '')) || 0,
-        amountText: rows[i][3] || '',
-        payType: rows[i][4] || 'เงินโอน',
-        referrer: rows[i][5] || '',
-        donationDate: rows[i][6] || ''
-      });
+      if (rows[i][1] || rows[i][0]) {
+        donors.push({
+          serial: rows[i][0] || '',
+          name: rows[i][1] || '',
+          amountNum: parseFloat(rows[i][2].toString().replace(/,/g, '')) || 0,
+          amountText: rows[i][3] || '',
+          payType: rows[i][4] || 'เงินโอน',
+          referrer: rows[i][5] || '',
+          donationDate: rows[i][6] || ''
+        });
+      }
     }
     return ContentService.createTextOutput(JSON.stringify({status: 'success', donors: donors})).setMimeType(ContentService.MimeType.JSON);
   } catch(err) {
@@ -1290,6 +1292,7 @@ function doGet(e) {
         }
 
         /**
+         * STREAMING_CHUNK:Fetching donors automatically from Google Sheet on start...
          * Fetch Donors from Google Sheet via Apps Script
          */
         async function syncLoadFromGoogleSheet(isAutoLoad = false) {
@@ -1305,7 +1308,11 @@ function doGet(e) {
             showToast(isAutoLoad ? 'กำลังโหลดข้อมูลอัตโนมัติจาก Google Sheet...' : 'กำลังดึงข้อมูลจาก Google Sheet...');
 
             try {
-                const response = await fetch(state.gsScriptUrl + '?action=get');
+                // เพิ่ม Query parameter สุ่มเวลาเพื่อป้องกัน Browser Caching ข้อมูลเก่า
+                const separator = state.gsScriptUrl.includes('?') ? '&' : '?';
+                const fetchUrl = `${state.gsScriptUrl}${separator}action=get&t=${Date.now()}`;
+
+                const response = await fetch(fetchUrl);
                 const resData = await response.json();
 
                 if (resData.status === 'success' && Array.isArray(resData.donors) && resData.donors.length > 0) {
@@ -1319,7 +1326,7 @@ function doGet(e) {
                     loadDonorToForm(0);
                     renderDonorTable();
                     renderCanvas();
-                    showToast(`ดึงข้อมูลสำเร็จ นำเข้าทั้งหมด ${resData.donors.length} รายการ`);
+                    showToast(`ดึงข้อมูลเก่าจาก Google Sheet สำเร็จ (${resData.donors.length} รายการ)`);
                 } else {
                     ensureMinimumDonor();
                     if (!isAutoLoad) showToast('ไม่พบข้อมูลรายชื่อใน Google Sheet', 'warning');
