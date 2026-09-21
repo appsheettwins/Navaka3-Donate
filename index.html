@@ -425,13 +425,13 @@ function doPost(e) {
 function doGet(e) {
   try {
     var sheet = SpreadsheetApp.openById('1ppxAhozZszl8_x8qRSy9EKTDhsgrx5RE8QW23k5CYTI').getActiveSheet();
-    var rows = sheet.getDataRange().getValues();
+    var rows = sheet.getDisplayValues();
     var donors = [];
     for (var i = 1; i < rows.length; i++) {
       donors.push({
         serial: rows[i][0] || '',
         name: rows[i][1] || '',
-        amountNum: parseFloat(rows[i][2]) || 0,
+        amountNum: parseFloat(rows[i][2].toString().replace(/,/g, '')) || 0,
         amountText: rows[i][3] || '',
         payType: rows[i][4] || 'เงินโอน',
         referrer: rows[i][5] || '',
@@ -452,6 +452,23 @@ function doGet(e) {
     </div>
 
     <script>
+        /**
+         * Helper: Format Date String to YYYY-MM-DD for HTML input[type="date"]
+         */
+        function formatDateYMD(val) {
+            if (!val) return '';
+            const strVal = String(val).trim();
+            if (/^\d{4}-\d{2}-\d{2}$/.test(strVal)) return strVal;
+            const d = new Date(val);
+            if (!isNaN(d.getTime())) {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+            return strVal;
+        }
+
         /**
          * Thai Baht Text Conversion Logic (BAHTTEXT)
          */
@@ -1244,13 +1261,19 @@ function doGet(e) {
             showToast('กำลังบันทึกข้อมูลลง Google Sheet...');
 
             try {
+                // Save newest item at the bottom of Google Sheet (oldest first, newest last)
+                const donorsToSave = [...state.donors].reverse().map(d => ({
+                    ...d,
+                    donationDate: formatDateYMD(d.donationDate)
+                }));
+
                 const response = await fetch(state.gsScriptUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify({
                         action: 'save',
                         sheetId: GOOGLE_SHEET_ID,
-                        donors: state.donors
+                        donors: donorsToSave
                     })
                 });
 
@@ -1286,8 +1309,12 @@ function doGet(e) {
                 const resData = await response.json();
 
                 if (resData.status === 'success' && Array.isArray(resData.donors) && resData.donors.length > 0) {
-                    // Reverse list to show latest entries on top
-                    state.donors = resData.donors.reverse();
+                    // Format dates and reverse so newest item (bottom of Google Sheet) appears at the top of UI
+                    const formatted = resData.donors.map(d => ({
+                        ...d,
+                        donationDate: formatDateYMD(d.donationDate)
+                    }));
+                    state.donors = formatted.reverse();
                     state.selectedIndex = 0;
                     loadDonorToForm(0);
                     renderDonorTable();
@@ -1314,7 +1341,7 @@ function doGet(e) {
                     amountText: '',
                     payType: 'เงินโอน',
                     referrer: '',
-                    donationDate: todayStr
+                    donationDate: formatDateYMD(todayStr)
                 }];
             }
             state.selectedIndex = 0;
@@ -1485,7 +1512,7 @@ function doGet(e) {
                 state.donors[state.selectedIndex].amountNum = parseFloat(inputAmountNum.value) || 0;
                 state.donors[state.selectedIndex].amountText = inputAmountText.value;
                 state.donors[state.selectedIndex].referrer = inputReferrer.value;
-                state.donors[state.selectedIndex].donationDate = inputDonationDate.value;
+                state.donors[state.selectedIndex].donationDate = formatDateYMD(inputDonationDate.value);
 
                 renderDonorTable();
                 renderCanvas();
@@ -1504,7 +1531,7 @@ function doGet(e) {
                 inputAmountNum.value = d.amountNum || '';
                 inputAmountText.value = d.amountText || '';
                 inputReferrer.value = d.referrer || '';
-                inputDonationDate.value = d.donationDate || '';
+                inputDonationDate.value = formatDateYMD(d.donationDate);
                 updatePayTypeButtonsUI(d.payType || 'เงินโอน');
                 editingIndexBadge.textContent = `รายการ #${index + 1}`;
             }
