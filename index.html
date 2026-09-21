@@ -518,10 +518,7 @@ function doGet(e) {
 
         const state = {
             // Donor List
-            donors: [
-                { id: 1, serial: '001', name: 'คุณสมศักดิ์ และครอบครัวใจบุญ', amountNum: 1000, amountText: 'หนึ่งพันบาทถ้วน', payType: 'เงินโอน', referrer: 'พระมหา สมชาย', donationDate: todayStr },
-                { id: 2, serial: '002', name: 'นางสาวดารณี สุขสวัสดิ์', amountNum: 2500, amountText: 'สองพันห้าร้อยบาทถ้วน', payType: 'เงินสด', referrer: 'คุณอุไรวรรณ', donationDate: todayStr }
-            ],
+            donors: [],
             selectedIndex: 0,
             searchQuery: '',
             
@@ -663,23 +660,18 @@ function doGet(e) {
         /**
          * Initialize App
          */
-        function initApp() {
+        async function initApp() {
             // Load saved layout & position parameters
             loadSavedElementConfig();
 
             // Load Default Background Image from Google Drive on startup
             loadDefaultTemplateImage();
 
-            // Load Form Data
-            loadDonorToForm(0);
-            renderDonorTable();
-            updatePropertyPanel();
-
             // Setup Event Listeners
             bindEvents();
 
-            // Initial Render
-            renderCanvas();
+            // Auto fetch donors from Google Sheet on start
+            await syncLoadFromGoogleSheet(true);
         }
 
         /**
@@ -1062,25 +1054,25 @@ function doGet(e) {
                 showToast('เรียงลำดับตัวเลข 001, 002... อัตโนมัติแล้ว');
             });
 
-            // Add New Donor Row
+            // Add New Donor Row (Inserted at the top for latest first)
             btnAddDonor.addEventListener('click', () => {
                 const newId = state.donors.length + 1;
                 const newSerial = String(newId).padStart(3, '0');
-                state.donors.push({
+                state.donors.unshift({
                     id: Date.now(),
                     serial: newSerial,
-                    name: 'ผู้มีจิตศรัทธา ท่านที่ ' + newId,
-                    amountNum: 1000,
-                    amountText: 'หนึ่งพันบาทถ้วน',
+                    name: '',
+                    amountNum: 0,
+                    amountText: '',
                     payType: 'เงินโอน',
                     referrer: '',
                     donationDate: new Date().toISOString().split('T')[0]
                 });
-                state.selectedIndex = state.donors.length - 1;
-                loadDonorToForm(state.selectedIndex);
+                state.selectedIndex = 0;
+                loadDonorToForm(0);
                 renderDonorTable();
                 renderCanvas();
-                showToast('เพิ่มรายชื่อใหม่แล้ว');
+                showToast('เพิ่มรายชื่อใหม่ไว้ด้านบนแล้ว');
             });
 
             // Lock / Unlock Toggle Listener
@@ -1277,33 +1269,58 @@ function doGet(e) {
         /**
          * Fetch Donors from Google Sheet via Apps Script
          */
-        async function syncLoadFromGoogleSheet() {
+        async function syncLoadFromGoogleSheet(isAutoLoad = false) {
             if (!state.gsScriptUrl) {
-                document.getElementById('gsModal').classList.remove('hidden');
-                showToast('กรุณาระบุ URL ของ Google Apps Script ก่อนดึงข้อมูล', 'warning');
+                if (!isAutoLoad) {
+                    document.getElementById('gsModal').classList.remove('hidden');
+                    showToast('กรุณาระบุ URL ของ Google Apps Script ก่อนดึงข้อมูล', 'warning');
+                }
+                ensureMinimumDonor();
                 return;
             }
 
-            showToast('กำลังดึงข้อมูลจาก Google Sheet...');
+            showToast(isAutoLoad ? 'กำลังโหลดข้อมูลอัตโนมัติจาก Google Sheet...' : 'กำลังดึงข้อมูลจาก Google Sheet...');
 
             try {
                 const response = await fetch(state.gsScriptUrl + '?action=get');
                 const resData = await response.json();
 
                 if (resData.status === 'success' && Array.isArray(resData.donors) && resData.donors.length > 0) {
-                    state.donors = resData.donors;
+                    // Reverse list to show latest entries on top
+                    state.donors = resData.donors.reverse();
                     state.selectedIndex = 0;
                     loadDonorToForm(0);
                     renderDonorTable();
                     renderCanvas();
                     showToast(`ดึงข้อมูลสำเร็จ นำเข้าทั้งหมด ${resData.donors.length} รายการ`);
                 } else {
-                    showToast('ไม่พบข้อมูลรายชื่อใน Google Sheet', 'warning');
+                    ensureMinimumDonor();
+                    if (!isAutoLoad) showToast('ไม่พบข้อมูลรายชื่อใน Google Sheet', 'warning');
                 }
             } catch (err) {
                 console.error(err);
-                showToast('ดึงข้อมูลไม่สำเร็จ ตรวจสอบ URL หรือสิทธิ์ Web App', 'warning');
+                ensureMinimumDonor();
+                if (!isAutoLoad) showToast('ดึงข้อมูลไม่สำเร็จ ตรวจสอบ URL หรือสิทธิ์ Web App', 'warning');
             }
+        }
+
+        function ensureMinimumDonor() {
+            if (state.donors.length === 0) {
+                state.donors = [{
+                    id: Date.now(),
+                    serial: '001',
+                    name: '',
+                    amountNum: 0,
+                    amountText: '',
+                    payType: 'เงินโอน',
+                    referrer: '',
+                    donationDate: todayStr
+                }];
+            }
+            state.selectedIndex = 0;
+            loadDonorToForm(0);
+            renderDonorTable();
+            renderCanvas();
         }
 
         /**
