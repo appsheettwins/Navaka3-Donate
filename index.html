@@ -134,7 +134,10 @@
                 <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2 flex-wrap gap-2">
                     <h2 class="font-bold text-slate-800 flex items-center gap-2 font-prompt text-base">
                         <span class="w-6 h-6 rounded-full bg-amber-100 text-amber-800 text-xs flex items-center justify-center font-bold">2</span>
-                        รายชื่อผู้ร่วมบุญ (<span id="donorCountText">1</span>)
+                        รายชื่อผู้ร่วมบุญ (<span id="donorCountText">0</span>)
+                        <span id="sheetSyncBadge" class="text-[10px] bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-full font-normal flex items-center gap-1 border border-emerald-200">
+                            <i class="fa-solid fa-spinner animate-spin text-emerald-600"></i> กำลังโหลดข้อมูล...
+                        </span>
                     </h2>
                     <div class="flex items-center gap-1.5">
                         <button id="btnSaveToSheet" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-medium px-2.5 py-1.5 rounded-lg transition flex items-center gap-1.5 shadow-sm" title="บันทึกรายชื่อลง Google Sheet">
@@ -1296,19 +1299,29 @@ function doGet(e) {
          * Fetch Donors from Google Sheet via Apps Script
          */
         async function syncLoadFromGoogleSheet(isAutoLoad = false) {
+            const syncBadge = document.getElementById('sheetSyncBadge');
+            if (syncBadge) {
+                syncBadge.classList.remove('hidden');
+                syncBadge.className = 'text-[10px] bg-amber-50 text-amber-800 px-2 py-0.5 rounded-full font-normal flex items-center gap-1 border border-amber-200';
+                syncBadge.innerHTML = '<i class="fa-solid fa-spinner animate-spin text-amber-600"></i> กำลังดึงข้อมูลอัตโนมัติ...';
+            }
+
             if (!state.gsScriptUrl) {
                 if (!isAutoLoad) {
                     document.getElementById('gsModal').classList.remove('hidden');
                     showToast('กรุณาระบุ URL ของ Google Apps Script ก่อนดึงข้อมูล', 'warning');
                 }
                 ensureMinimumDonor();
+                if (syncBadge) {
+                    syncBadge.innerHTML = '<i class="fa-solid fa-circle-exclamation text-amber-600"></i> ไม่ได้เชื่อมต่อ Sheet';
+                }
                 return;
             }
 
-            showToast(isAutoLoad ? 'กำลังโหลดข้อมูลอัตโนมัติจาก Google Sheet...' : 'กำลังดึงข้อมูลจาก Google Sheet...');
+            if (!isAutoLoad) showToast('กำลังดึงข้อมูลจาก Google Sheet...');
 
             try {
-                // เพิ่ม Query parameter สุ่มเวลาเพื่อป้องกัน Browser Caching ข้อมูลเก่า
+                // ป้องกัน Browser Cache ด้วยการเติม Timestamp
                 const separator = state.gsScriptUrl.includes('?') ? '&' : '?';
                 const fetchUrl = `${state.gsScriptUrl}${separator}action=get&t=${Date.now()}`;
 
@@ -1316,24 +1329,39 @@ function doGet(e) {
                 const resData = await response.json();
 
                 if (resData.status === 'success' && Array.isArray(resData.donors) && resData.donors.length > 0) {
-                    // Format dates and reverse so newest item (bottom of Google Sheet) appears at the top of UI
+                    // แปลงรูปแบบวันที่ และกลับลำดับให้รายการล่าสุด (ท้าย Sheet) ขึ้นมาอยู่อันดับแรกสุด (Top / Index 0)
                     const formatted = resData.donors.map(d => ({
                         ...d,
                         donationDate: formatDateYMD(d.donationDate)
                     }));
-                    state.donors = formatted.reverse();
-                    state.selectedIndex = 0;
+                    
+                    state.donors = formatted.reverse(); // นำรายการล่าสุดไว้ด้านบนสุด
+                    state.selectedIndex = 0; // เลือกรายการล่าสุดมาแสดงในแบบฟอร์มและพรีวิวทันที
+                    
                     loadDonorToForm(0);
                     renderDonorTable();
                     renderCanvas();
-                    showToast(`ดึงข้อมูลเก่าจาก Google Sheet สำเร็จ (${resData.donors.length} รายการ)`);
+                    
+                    if (syncBadge) {
+                        syncBadge.className = 'text-[10px] bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-full font-normal flex items-center gap-1 border border-emerald-200';
+                        syncBadge.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-600"></i> อัปเดตล่าสุดแล้ว (ล่าสุดอยู่บนสุด)';
+                    }
+                    
+                    showToast(`ดึงข้อมูลสำเร็จ! แสดงรายการล่าสุดไว้ด้านบนสุด (${resData.donors.length} รายการ)`);
                 } else {
                     ensureMinimumDonor();
+                    if (syncBadge) {
+                        syncBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-amber-600"></i> ไม่พบข้อมูลใน Sheet';
+                    }
                     if (!isAutoLoad) showToast('ไม่พบข้อมูลรายชื่อใน Google Sheet', 'warning');
                 }
             } catch (err) {
                 console.error(err);
                 ensureMinimumDonor();
+                if (syncBadge) {
+                    syncBadge.className = 'text-[10px] bg-rose-50 text-rose-800 px-2 py-0.5 rounded-full font-normal flex items-center gap-1 border border-rose-200';
+                    syncBadge.innerHTML = '<i class="fa-solid fa-circle-xmark text-rose-600"></i> โหลดข้อมูลล้มเหลว';
+                }
                 if (!isAutoLoad) showToast('ดึงข้อมูลไม่สำเร็จ ตรวจสอบ URL หรือสิทธิ์ Web App', 'warning');
             }
         }
