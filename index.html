@@ -140,8 +140,8 @@
                         </span>
                     </h2>
                     <div class="flex items-center gap-1.5">
-                        <button id="btnSaveToSheet" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-medium px-2.5 py-1.5 rounded-lg transition flex items-center gap-1.5 shadow-sm" title="บันทึกรายชื่อลง Google Sheet">
-                            <i class="fa-solid fa-cloud-arrow-up text-emerald-200"></i> บันทึกลง Sheet
+                        <button id="btnAppendToSheet" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-medium px-2.5 py-1.5 rounded-lg transition flex items-center gap-1.5 shadow-sm" title="บันทึกเฉพาะรายชื่อใหม่ต่อท้าย Sheet">
+                            <i class="fa-solid fa-square-plus text-emerald-200"></i> บันทึกรายการใหม่ลง Sheet
                         </button>
                         <button id="btnAddDonor" class="bg-amber-800 hover:bg-amber-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 shadow-sm">
                             <i class="fa-solid fa-plus"></i> เพิ่มรายชื่อ
@@ -375,50 +375,69 @@
             <div class="space-y-1.5">
                 <label class="block text-xs font-bold text-slate-700">URL ของ Google Apps Script Web App (สำหรับการส่งบันทึก):</label>
                 <div class="flex gap-2">
-                    <input type="text" id="inputGsUrl" class="flex-1 text-xs p-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-emerald-500 focus:outline-none" placeholder="https://script.google.com/macros/s/AKfycbz2QakyRjmrfU5bw9fB1oVJqVYveYSXJZIEDg5MH6pDR1Nvcx3P2DHbEj3gJjahpxX8Gg/exec">
+                    <input type="text" id="inputGsUrl" class="flex-1 text-xs p-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-emerald-500 focus:outline-none" placeholder="https://script.google.com/macros/s/.../exec">
                     <button id="btnSaveGsUrl" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-3.5 py-2 rounded-lg font-medium transition">
                         บันทึก URL
                     </button>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
-                <button id="btnModalSaveSheet" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 rounded-lg transition flex items-center justify-center gap-2 shadow-sm">
-                    <i class="fa-solid fa-cloud-arrow-up"></i> บันทึกข้อมูลลง Google Sheet
+            <div class="grid grid-cols-3 gap-2 border-t border-slate-100 pt-3">
+                <button id="btnModalAppendSheet" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 shadow-sm" title="เพิ่มเฉพาะข้อมูลในเว็บลงท้าย Sheet โดยไม่ลบอันเดิม">
+                    <i class="fa-solid fa-square-plus"></i> บันทึกต่อท้าย Sheet
                 </button>
-                <button id="btnModalLoadSheet" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 rounded-lg transition flex items-center justify-center gap-2 shadow-sm">
-                    <i class="fa-solid fa-cloud-arrow-down"></i> ดึงข้อมูลจาก Google Sheet
+                <button id="btnModalSaveSheet" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 shadow-sm" title="ลบใน Sheet แล้วเขียนใหม่ทั้งหมดตามหน้าเว็บ">
+                    <i class="fa-solid fa-rotate"></i> ซิงก์ทับทั้งหมด
+                </button>
+                <button id="btnModalLoadSheet" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-cloud-arrow-down"></i> ดึงข้อมูลจาก Sheet
                 </button>
             </div>
 
             <!-- Apps Script Integration Guide -->
-            <details class="bg-slate-50 rounded-lg border border-slate-200 p-3 text-xs space-y-2">
+            <details class="bg-slate-50 rounded-lg border border-slate-200 p-3 text-xs space-y-2" open>
                 <summary class="font-bold text-slate-700 cursor-pointer flex justify-between items-center font-prompt">
-                    <span><i class="fa-solid fa-code text-emerald-600"></i> วิธีเชื่อมต่อและสร้างสคริปต์ Google Apps Script (คลิกเปิด)</span>
+                    <span><i class="fa-solid fa-code text-emerald-600"></i> โค้ดสคริปต์ที่ต้องนำไปวางใน Google Apps Script (ปรับใหม่แล้ว)</span>
                     <i class="fa-solid fa-chevron-down text-slate-400 text-[10px]"></i>
                 </summary>
-                <ol class="list-decimal list-inside space-y-1 text-slate-600 pt-2 border-t border-slate-200 mt-2 leading-relaxed">
+                <p class="text-slate-500 text-[11px] pt-1">💡 โค้ดนี้รองรับทั้งแบบ **ต่อท้ายข้อมูล (Append)** และแบบ **เขียนทับ (Overwrite)** กรุณานำโค้ดนี้ไปวางแทนอันเดิมใน Apps Script แล้วกด Deploy ใหม่</p>
+                <ol class="list-decimal list-inside space-y-1 text-slate-600 border-t border-slate-200 pt-2 leading-relaxed">
                     <li>เปิดไฟล์ Google Sheet ID: <code class="font-mono bg-amber-100 px-1 rounded text-amber-900">1ppxAhozZszl8_x8qRSy9EKTDhsgrx5RE8QW23k5CYTI</code></li>
                     <li>ไปที่เมนู <b>ส่วนขยาย (Extensions)</b> &gt; <b>Apps Script</b></li>
                     <li>วางโค้ดชุดนี้แทนที่ไฟล์เดิม แล้วกด <b>บันทึก (Save)</b></li>
                     <li>กดปุ่ม <b>ทำให้ใช้งานได้ (Deploy)</b> &gt; <b>การทำให้ใช้งานได้ใหม่ (New deployment)</b></li>
                     <li>เลือกประเภท <b>เว็บแอป (Web App)</b>, สิทธิ์เข้าถึงเป็น <b>ทุกคน (Anyone)</b> แล้วกด Deploy</li>
-                    <li>คัดลอก **URL เว็บแอป** มาวางในช่องด้านบนแล้วกด บันทึก URL</li>
                 </ol>
 
                 <div class="relative mt-2">
-                    <pre class="bg-slate-900 text-emerald-300 p-3 rounded text-[11px] font-mono overflow-x-auto max-h-48 leading-relaxed" id="scriptCodeText">
+                    <pre class="bg-slate-900 text-emerald-300 p-3 rounded text-[11px] font-mono overflow-x-auto max-h-56 leading-relaxed" id="scriptCodeText">
 function doPost(e) {
   try {
     var sheet = SpreadsheetApp.openById('1ppxAhozZszl8_x8qRSy9EKTDhsgrx5RE8QW23k5CYTI').getActiveSheet();
     var data = JSON.parse(e.postData.contents);
-    if (data.action === 'save') {
-      sheet.clearContents();
-      sheet.appendRow(['ลำดับ', 'ชื่อผู้ถวาย/ร่วมบุญ', 'จำนวนเงิน', 'ตัวอักษร', 'การชำระ', 'ผู้บอกบุญ', 'วันที่ทำบุญ']);
+    
+    // Header แถวที่ 1
+    var headers = ['ลำดับ', 'ชื่อผู้ถวาย/ร่วมบุญ', 'จำนวนเงิน', 'ตัวอักษร', 'การชำระ', 'ผู้บอกบุญ', 'วันที่ทำบุญ'];
+
+    // กรณีที่ 1: บันทึกเฉพาะข้อมูลใหม่ต่อท้าย (Append Only) ไม่ลบอันเดิม
+    if (data.action === 'append') {
+      if (sheet.getLastRow() === 0) {
+        sheet.appendRow(headers);
+      }
       data.donors.forEach(function(d) {
         sheet.appendRow([d.serial, d.name, d.amountNum, d.amountText, d.payType, d.referrer, d.donationDate]);
       });
-      return ContentService.createTextOutput(JSON.stringify({status: 'success'})).setMimeType(ContentService.MimeType.JSON);
+      return ContentService.createTextOutput(JSON.stringify({status: 'success', message: 'ต่อท้ายข้อมูลสำเร็จ'})).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // กรณีที่ 2: เขียนทับข้อมูลทั้งหมด (Full Sync)
+    if (data.action === 'save') {
+      sheet.clearContents();
+      sheet.appendRow(headers);
+      data.donors.forEach(function(d) {
+        sheet.appendRow([d.serial, d.name, d.amountNum, d.amountText, d.payType, d.referrer, d.donationDate]);
+      });
+      return ContentService.createTextOutput(JSON.stringify({status: 'success', message: 'บันทึกทับทั้งหมดสำเร็จ'})).setMimeType(ContentService.MimeType.JSON);
     }
   } catch(err) {
     return ContentService.createTextOutput(JSON.stringify({status: 'error', message: err.toString()})).setMimeType(ContentService.MimeType.JSON);
@@ -570,7 +589,7 @@ function doGet(e) {
                     y: 194,
                     fontSize: 30,
                     fontFamily: 'Sarabun',
-                    color: '#8b1d1d', // Temple dark red matching reference image
+                    color: '#8b1d1d',
                     bold: true,
                     italic: false,
                     align: 'center',
@@ -683,16 +702,9 @@ function doGet(e) {
          * Initialize App
          */
         async function initApp() {
-            // Load saved layout & position parameters
             loadSavedElementConfig();
-
-            // Load Default Background Image from Google Drive on startup
             loadDefaultTemplateImage();
-
-            // Setup Event Listeners
             bindEvents();
-
-            // Auto fetch donors from Google Sheet on start
             await syncLoadFromGoogleSheet(true);
         }
 
@@ -722,7 +734,6 @@ function doGet(e) {
             offscreen.height = CANVAS_HEIGHT;
             const oCtx = offscreen.getContext('2d');
 
-            // 1. Soft Silk Background Gradient
             const bgGrad = oCtx.createRadialGradient(
                 CANVAS_WIDTH/2, CANVAS_HEIGHT/2, 50,
                 CANVAS_WIDTH/2, CANVAS_HEIGHT/2, 700
@@ -733,7 +744,6 @@ function doGet(e) {
             oCtx.fillStyle = bgGrad;
             oCtx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-            // Silk Ribbon Waves (Abstract Gold Curves)
             oCtx.save();
             oCtx.strokeStyle = 'rgba(212, 175, 55, 0.25)';
             oCtx.lineWidth = 12;
@@ -750,23 +760,6 @@ function doGet(e) {
             oCtx.stroke();
             oCtx.restore();
 
-            // Gold Sparkles / Bokeh Points
-            const sparkles = [
-                {x: 100, y: 80, r: 2}, {x: 1100, y: 120, r: 3}, {x: 1050, y: 220, r: 2},
-                {x: 150, y: 480, r: 2.5}, {x: 1120, y: 500, r: 3.5}, {x: 90, y: 300, r: 1.5}
-            ];
-            sparkles.forEach(s => {
-                oCtx.save();
-                oCtx.fillStyle = 'rgba(212, 175, 55, 0.6)';
-                oCtx.shadowColor = '#d4af37';
-                oCtx.shadowBlur = 8;
-                oCtx.beginPath();
-                oCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-                oCtx.fill();
-                oCtx.restore();
-            });
-
-            // Outer Elegant Border
             oCtx.strokeStyle = '#d4af37';
             oCtx.lineWidth = 3;
             oCtx.strokeRect(15, 15, CANVAS_WIDTH - 30, CANVAS_HEIGHT - 30);
@@ -774,100 +767,11 @@ function doGet(e) {
             oCtx.lineWidth = 1;
             oCtx.strokeRect(20, 20, CANVAS_WIDTH - 40, CANVAS_HEIGHT - 40);
 
-            // Static Template Text - Header (Top Center)
             oCtx.fillStyle = '#8b1d1d';
             oCtx.font = 'bold 30px "Prompt", sans-serif';
             oCtx.textAlign = 'center';
             oCtx.fillText('กองทุนปัญญาบารมี', CANVAS_WIDTH / 2, 65);
 
-            oCtx.fillStyle = '#666666';
-            oCtx.font = '14px "Sarabun", sans-serif';
-            oCtx.fillText('เพื่อการอบรมพระนวะกะเส้นทางวิสามัญสาขาและพุทธบุตรอาสา', CANVAS_WIDTH / 2, 92);
-
-            // Header line divider accent
-            oCtx.strokeStyle = '#d4af37';
-            oCtx.lineWidth = 1.5;
-            oCtx.beginPath();
-            oCtx.moveTo(CANVAS_WIDTH / 2 - 120, 105);
-            oCtx.lineTo(CANVAS_WIDTH / 2 + 120, 105);
-            oCtx.stroke();
-
-            // Anchor Text: ขออนุโมทนาบุญกับ
-            oCtx.fillStyle = '#222222';
-            oCtx.font = '22px "Sarabun", sans-serif';
-            oCtx.textAlign = 'center';
-            oCtx.fillText('ขออนุโมทนาบุญกับ', CANVAS_WIDTH / 2, 210);
-
-            // Sub-line: ร่วมบุญถวายกองทุน...
-            oCtx.fillStyle = '#8b1d1d';
-            oCtx.font = 'bold 20px "Sarabun", sans-serif';
-            oCtx.fillText('ร่วมบุญถวายกองทุนปัญญาบารมี เพื่อการอบรมพระนวะกะเส้นทางวิสามัญสาขาและพุทธบุตรอาสา', CANVAS_WIDTH / 2, 335);
-
-            // Static Labels for Amount
-            oCtx.fillStyle = '#333333';
-            oCtx.font = '22px "Sarabun", sans-serif';
-            oCtx.textAlign = 'left';
-            oCtx.fillText('จำนวน', 260, 388);
-            oCtx.fillText('บาท', 540, 388);
-
-            // Blessing Text Paragraph
-            oCtx.fillStyle = '#333333';
-            oCtx.font = '18px "Sarabun", sans-serif';
-            oCtx.textAlign = 'center';
-            oCtx.fillText('ด้วยอำนาจทานบารมีที่ได้บำเพ็ญในครั้งนี้ จงเป็นพลวปัจจัยให้ท่านได้สำเร็จมรรคาผล', CANVAS_WIDTH / 2, 440);
-            oCtx.fillText('มีดวงตาเห็นธรรม พร้อมทั้งวิชชาและจรณะ ตราบเท่าเข้าสู่พระนิพพานเทอญฯ', CANVAS_WIDTH / 2, 470);
-
-            // Signatures (Bottom Left & Bottom Right)
-            // Left Signature
-            oCtx.beginPath();
-            oCtx.strokeStyle = '#999999';
-            oCtx.setLineDash([2, 2]);
-            oCtx.moveTo(130, 545);
-            oCtx.lineTo(330, 545);
-            oCtx.stroke();
-            oCtx.setLineDash([]); // Reset line dash
-
-            // Draw Mock Hand-signature 1
-            oCtx.strokeStyle = '#0f172a';
-            oCtx.lineWidth = 2;
-            oCtx.beginPath();
-            oCtx.moveTo(180, 535);
-            oCtx.bezierCurveTo(200, 500, 220, 550, 240, 515);
-            oCtx.stroke();
-
-            oCtx.fillStyle = '#333333';
-            oCtx.font = 'bold 14px "Sarabun", sans-serif';
-            oCtx.textAlign = 'center';
-            oCtx.fillText('(พระชัยวิชิต โชติวโร)', 230, 565);
-            oCtx.font = '13px "Sarabun", sans-serif';
-            oCtx.fillText('ผู้รับเงิน', 230, 585);
-
-            // Right Signature
-            oCtx.beginPath();
-            oCtx.strokeStyle = '#999999';
-            oCtx.setLineDash([2, 2]);
-            oCtx.moveTo(870, 545);
-            oCtx.lineTo(1070, 545);
-            oCtx.stroke();
-
-            // Draw Mock Hand-signature 2
-            oCtx.strokeStyle = '#0f172a';
-            oCtx.lineWidth = 2;
-            oCtx.beginPath();
-            oCtx.moveTo(920, 535);
-            oCtx.bezierCurveTo(940, 500, 970, 550, 1010, 510);
-            oCtx.stroke();
-
-            oCtx.fillStyle = '#333333';
-            oCtx.font = 'bold 14px "Sarabun", sans-serif';
-            oCtx.fillText('(พระกิตติ กิตติพนุธ)', 970, 565);
-            oCtx.font = '13px "Sarabun", sans-serif';
-            oCtx.fillText('หัวหน้ากองอบรมพระศูนย์ส่งเสริมศีลธรรม', 970, 585);
-
-            // Center Lotus / Offerings Lotus Ornament
-            drawCenterLotusOrnament(oCtx, CANVAS_WIDTH / 2, 540);
-
-            // Store default background image
             const img = new Image();
             img.src = offscreen.toDataURL();
             img.onload = () => {
@@ -877,60 +781,11 @@ function doGet(e) {
         }
 
         /**
-         * Draw Center Lotus Vector Symbol
-         */
-        function drawCenterLotusOrnament(ctx, x, y) {
-            ctx.save();
-            ctx.translate(x, y);
-
-            ctx.fillStyle = '#d97706';
-            ctx.beginPath();
-            ctx.roundRect(-40, -45, 80, 18, 4);
-            ctx.fill();
-
-            ctx.fillStyle = '#f59e0b';
-            ctx.beginPath();
-            ctx.roundRect(-36, -42, 72, 12, 3);
-            ctx.fill();
-
-            ctx.fillStyle = '#ec4899';
-            ctx.beginPath();
-            ctx.moveTo(0, -10);
-            ctx.quadraticCurveTo(-30, -30, -60, 0);
-            ctx.quadraticCurveTo(-30, 20, 0, 35);
-            ctx.quadraticCurveTo(30, 20, 60, 0);
-            ctx.quadraticCurveTo(30, -30, 0, -10);
-            ctx.fill();
-
-            ctx.fillStyle = '#f43f5e';
-            ctx.beginPath();
-            ctx.moveTo(0, -5);
-            ctx.quadraticCurveTo(-20, -20, -45, 0);
-            ctx.quadraticCurveTo(-20, 15, 0, 25);
-            ctx.quadraticCurveTo(20, 15, 45, 0);
-            ctx.quadraticCurveTo(20, -20, 0, -5);
-            ctx.fill();
-
-            ctx.fillStyle = '#eab308';
-            ctx.beginPath();
-            ctx.moveTo(-10, 25);
-            ctx.lineTo(10, 25);
-            ctx.lineTo(15, 50);
-            ctx.lineTo(-15, 50);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.restore();
-        }
-
-        /**
-         * STREAMING_CHUNK:Rendering canvas content and text layers...
          * Main Render Canvas Loop
          */
         function renderCanvas() {
             ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-            // 1. Draw Background Template
             if (state.bgImage) {
                 ctx.drawImage(state.bgImage, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
             }
@@ -945,7 +800,6 @@ function doGet(e) {
                 donationDate: ''
             };
 
-            // 2. Render Text Layers
             Object.keys(state.elements).forEach(key => {
                 const el = state.elements[key];
                 let textVal = '';
@@ -959,7 +813,6 @@ function doGet(e) {
 
                 ctx.save();
                 
-                // Font Styling
                 const fontStyle = el.italic ? 'italic ' : '';
                 const fontWeight = el.bold ? 'bold ' : '';
                 ctx.font = `${fontStyle}${fontWeight}${el.fontSize}px "${el.fontFamily}", sans-serif`;
@@ -967,10 +820,8 @@ function doGet(e) {
                 ctx.textAlign = el.align || 'left';
                 ctx.textBaseline = 'middle';
 
-                // Draw Text
                 ctx.fillText(textVal, el.x, el.y);
 
-                // Highlight active element with bounding box indicator
                 if (key === state.activeKey) {
                     const metrics = ctx.measureText(textVal);
                     const width = metrics.width;
@@ -984,19 +835,6 @@ function doGet(e) {
                     ctx.lineWidth = 1.5;
                     ctx.setLineDash([4, 4]);
                     ctx.strokeRect(startX - 6, el.y - height / 2 - 4, width + 12, height + 8);
-                    
-                    if (el.locked) {
-                        ctx.fillStyle = '#ef4444';
-                        ctx.fillRect(startX + width + 4, el.y - height / 2 - 6, 18, 18);
-                        ctx.fillStyle = '#ffffff';
-                        ctx.font = '10px sans-serif';
-                        ctx.fillText('🔒', startX + width + 8, el.y - height / 2 + 7);
-                    } else {
-                        // Draw Drag Handles
-                        ctx.fillStyle = '#3b82f6';
-                        ctx.fillRect(startX - 9, el.y - height / 2 - 7, 6, 6);
-                        ctx.fillRect(startX + width + 3, el.y + height / 2 + 1, 6, 6);
-                    }
                 }
 
                 ctx.restore();
@@ -1004,11 +842,9 @@ function doGet(e) {
         }
 
         /**
-         * STREAMING_CHUNK:Binding UI controls and payment buttons listeners...
          * Bind Form & Interactive Canvas Events
          */
         function bindEvents() {
-            // Upload Custom Background Image
             bgUploader.addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -1025,13 +861,11 @@ function doGet(e) {
                 reader.readAsDataURL(file);
             });
 
-            // Reset Default Background
             btnResetBg.addEventListener('click', () => {
                 loadDefaultTemplateImage();
                 showToast('รีเซ็ตแม่แบบเริ่มต้นเรียบร้อย');
             });
 
-            // Form Fields Syncing
             inputSerial.addEventListener('input', updateCurrentDonorFromForm);
             inputName.addEventListener('input', updateCurrentDonorFromForm);
             inputAmountNum.addEventListener('input', (e) => {
@@ -1047,7 +881,6 @@ function doGet(e) {
             inputReferrer.addEventListener('input', updateCurrentDonorFromForm);
             inputDonationDate.addEventListener('change', updateCurrentDonorFromForm);
 
-            // Filter Search Listener
             filterSearch.addEventListener('input', (e) => {
                 state.searchQuery = e.target.value.toLowerCase().trim();
                 renderDonorTable();
@@ -1061,11 +894,9 @@ function doGet(e) {
                 }
             });
 
-            // Payment Type Toggle Buttons
             btnPayCash.addEventListener('click', () => setPaymentType('เงินสด'));
             btnPayTransfer.addEventListener('click', () => setPaymentType('เงินโอน'));
 
-            // Auto Serial Numbering Button
             document.getElementById('btnAutoSerial').addEventListener('click', () => {
                 state.donors.forEach((d, idx) => {
                     d.serial = String(idx + 1).padStart(3, '0');
@@ -1076,7 +907,6 @@ function doGet(e) {
                 showToast('เรียงลำดับตัวเลข 001, 002... อัตโนมัติแล้ว');
             });
 
-            // Add New Donor Row (Inserted at the top for latest first)
             btnAddDonor.addEventListener('click', () => {
                 const newId = state.donors.length + 1;
                 const newSerial = String(newId).padStart(3, '0');
@@ -1088,21 +918,18 @@ function doGet(e) {
                     amountText: '',
                     payType: 'เงินโอน',
                     referrer: '',
-                    donationDate: new Date().toISOString().split('T')[0]
+                    donationDate: new Date().toISOString().split('T')[0],
+                    isNew: true
                 });
                 state.selectedIndex = 0;
                 loadDonorToForm(0);
                 renderDonorTable();
                 renderCanvas();
-                showToast('เพิ่มรายชื่อใหม่ไว้ด้านบนแล้ว');
+                showToast('เพิ่มรายชื่อใหม่ไว้ด้านบนแล้ว (พร้อมบันทึกต่อท้าย)');
             });
 
-            // Lock / Unlock Toggle Listener
-            btnToggleLock.addEventListener('click', () => {
-                toggleLockActiveElement();
-            });
+            btnToggleLock.addEventListener('click', toggleLockActiveElement);
 
-            // Fine-tune Property Selector Sync
             activeElementSelector.addEventListener('change', (e) => {
                 state.activeKey = e.target.value;
                 updatePropertyPanel();
@@ -1131,17 +958,6 @@ function doGet(e) {
                     state.elements[state.activeKey].color = e.target.value;
                     saveElementConfig();
                     renderCanvas();
-                }
-            });
-
-            propFontColorText.addEventListener('input', (e) => {
-                if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
-                    propFontColor.value = e.target.value;
-                    if (state.elements[state.activeKey]) {
-                        state.elements[state.activeKey].color = e.target.value;
-                        saveElementConfig();
-                        renderCanvas();
-                    }
                 }
             });
 
@@ -1177,49 +993,20 @@ function doGet(e) {
                 renderCanvas();
             });
 
-            // Nudge Position Buttons
             document.getElementById('btnNudgeUp').addEventListener('click', () => moveActiveElement(0, -2));
             document.getElementById('btnNudgeDown').addEventListener('click', () => moveActiveElement(0, 2));
             document.getElementById('btnNudgeLeft').addEventListener('click', () => moveActiveElement(-2, 0));
             document.getElementById('btnNudgeRight').addEventListener('click', () => moveActiveElement(2, 0));
 
-            // Canvas Mouse Dragging Interactions
             canvas.addEventListener('mousedown', onPointerDown);
             canvas.addEventListener('mousemove', onPointerMove);
             window.addEventListener('mouseup', onPointerUp);
 
-            // Touch events support for mobile screen dragging
-            canvas.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 1) {
-                    const touch = e.touches[0];
-                    onPointerDown({
-                        clientX: touch.clientX,
-                        clientY: touch.clientY,
-                        preventDefault: () => e.preventDefault()
-                    });
-                }
-            });
-            canvas.addEventListener('touchmove', (e) => {
-                if (e.touches.length === 1) {
-                    const touch = e.touches[0];
-                    onPointerMove({
-                        clientX: touch.clientX,
-                        clientY: touch.clientY
-                    });
-                }
-            });
-            window.addEventListener('touchend', onPointerUp);
-
-            // Export Single Image
             document.getElementById('btnExportCurrent').addEventListener('click', exportSingleImage);
-            
-            // Export Batch
             document.getElementById('btnExportBatch').addEventListener('click', exportBatchImages);
 
-            // Google Sheets Modal & Event Handlers
             const gsModal = document.getElementById('gsModal');
             const inputGsUrl = document.getElementById('inputGsUrl');
-            
             inputGsUrl.value = state.gsScriptUrl;
 
             document.getElementById('btnGoogleSheetsModal').addEventListener('click', () => {
@@ -1237,8 +1024,10 @@ function doGet(e) {
                 showToast('บันทึก URL ของ Google Apps Script เรียบร้อย');
             });
 
-            document.getElementById('btnSaveToSheet').addEventListener('click', syncSaveToGoogleSheet);
-            document.getElementById('btnModalSaveSheet').addEventListener('click', syncSaveToGoogleSheet);
+            // Action Buttons for Sheet Sync Options
+            document.getElementById('btnAppendToSheet').addEventListener('click', () => syncSaveToGoogleSheet('append'));
+            document.getElementById('btnModalAppendSheet').addEventListener('click', () => syncSaveToGoogleSheet('append'));
+            document.getElementById('btnModalSaveSheet').addEventListener('click', () => syncSaveToGoogleSheet('save'));
             document.getElementById('btnModalLoadSheet').addEventListener('click', syncLoadFromGoogleSheet);
 
             document.getElementById('btnCopyScript').addEventListener('click', () => {
@@ -1254,29 +1043,49 @@ function doGet(e) {
         }
 
         /**
-         * Save Donors to Google Sheet via Apps Script
+         * Save Donors to Google Sheet
+         * @param {string} actionType - 'append' (บันทึกเฉพาะรายชื่อใหม่) หรือ 'save' (เขียนทับทั้งหมด)
          */
-        async function syncSaveToGoogleSheet() {
+        async function syncSaveToGoogleSheet(actionType = 'append') {
             if (!state.gsScriptUrl) {
                 document.getElementById('gsModal').classList.remove('hidden');
                 showToast('กรุณาระบุ URL ของ Google Apps Script ก่อนบันทึก', 'warning');
                 return;
             }
 
-            showToast('กำลังบันทึกข้อมูลลง Google Sheet...');
+            const isAppend = actionType === 'append';
+            let donorsToSave = [];
 
-            try {
-                // Save newest item at the bottom of Google Sheet (oldest first, newest last)
-                const donorsToSave = [...state.donors].reverse().map(d => ({
+            if (isAppend) {
+                // คัดเลือกเฉพาะรายชื่อใหม่ที่เพิ่มเข้ามา (isNew === true)
+                donorsToSave = state.donors.filter(d => d.isNew);
+
+                if (donorsToSave.length === 0) {
+                    showToast('ไม่พบรายชื่อใหม่ที่ต้องบันทึกเพิ่ม (ทุกรายการอยู่ใน Sheet แล้ว)', 'warning');
+                    return;
+                }
+
+                // เรียงลำดับรายการใหม่จากรายการที่สร้างก่อนไปหลัง เพื่อลง Sheet ตามลำดับ
+                donorsToSave = [...donorsToSave].reverse().map(d => ({
                     ...d,
                     donationDate: formatDateYMD(d.donationDate)
                 }));
 
+                showToast(`กำลังบันทึกเฉพาะรายชื่อใหม่ ${donorsToSave.length} รายการลง Google Sheet...`);
+            } else {
+                showToast('กำลังเขียนทับข้อมูลทั้งหมดลง Google Sheet...');
+                donorsToSave = [...state.donors].map(d => ({
+                    ...d,
+                    donationDate: formatDateYMD(d.donationDate)
+                })).reverse();
+            }
+
+            try {
                 const response = await fetch(state.gsScriptUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify({
-                        action: 'save',
+                        action: actionType,
                         sheetId: GOOGLE_SHEET_ID,
                         donors: donorsToSave
                     })
@@ -1284,7 +1093,10 @@ function doGet(e) {
 
                 const resData = await response.json();
                 if (resData.status === 'success') {
-                    showToast('บันทึกข้อมูลลง Google Sheet สำเร็จ!');
+                    // บันทึกสำเร็จแล้ว ปรับสถานะเป็นบันทึกแล้ว (isNew = false)
+                    state.donors.forEach(d => { d.isNew = false; });
+                    renderDonorTable();
+                    showToast(isAppend ? `บันทึกรายชื่อใหม่ ${donorsToSave.length} รายการลง Google Sheet สำเร็จ!` : 'บันทึกซิงก์ทับทั้งหมดสำเร็จ!');
                 } else {
                     showToast('เกิดข้อผิดพลาด: ' + (resData.message || 'ไม่สามารถบันทึกได้'), 'warning');
                 }
@@ -1295,7 +1107,6 @@ function doGet(e) {
         }
 
         /**
-         * STREAMING_CHUNK:Fetching donors automatically from Google Sheet on start...
          * Fetch Donors from Google Sheet via Apps Script
          */
         async function syncLoadFromGoogleSheet(isAutoLoad = false) {
@@ -1321,7 +1132,6 @@ function doGet(e) {
             if (!isAutoLoad) showToast('กำลังดึงข้อมูลจาก Google Sheet...');
 
             try {
-                // ป้องกัน Browser Cache ด้วยการเติม Timestamp
                 const separator = state.gsScriptUrl.includes('?') ? '&' : '?';
                 const fetchUrl = `${state.gsScriptUrl}${separator}action=get&t=${Date.now()}`;
 
@@ -1329,14 +1139,14 @@ function doGet(e) {
                 const resData = await response.json();
 
                 if (resData.status === 'success' && Array.isArray(resData.donors) && resData.donors.length > 0) {
-                    // แปลงรูปแบบวันที่ และกลับลำดับให้รายการล่าสุด (ท้าย Sheet) ขึ้นมาอยู่อันดับแรกสุด (Top / Index 0)
                     const formatted = resData.donors.map(d => ({
                         ...d,
+                        isNew: false,
                         donationDate: formatDateYMD(d.donationDate)
                     }));
                     
-                    state.donors = formatted.reverse(); // นำรายการล่าสุดไว้ด้านบนสุด
-                    state.selectedIndex = 0; // เลือกรายการล่าสุดมาแสดงในแบบฟอร์มและพรีวิวทันที
+                    state.donors = formatted.reverse();
+                    state.selectedIndex = 0;
                     
                     loadDonorToForm(0);
                     renderDonorTable();
@@ -1376,7 +1186,8 @@ function doGet(e) {
                     amountText: '',
                     payType: 'เงินโอน',
                     referrer: '',
-                    donationDate: formatDateYMD(todayStr)
+                    donationDate: formatDateYMD(todayStr),
+                    isNew: true
                 }];
             }
             state.selectedIndex = 0;
@@ -1385,9 +1196,6 @@ function doGet(e) {
             renderCanvas();
         }
 
-        /**
-         * Set Payment Type for Active Donor
-         */
         function setPaymentType(type) {
             if (state.donors[state.selectedIndex]) {
                 state.donors[state.selectedIndex].payType = type;
@@ -1408,9 +1216,6 @@ function doGet(e) {
             }
         }
 
-        /**
-         * Canvas Pointer Down - Hit Test to select and drag text element
-         */
         function onPointerDown(e) {
             const rect = canvas.getBoundingClientRect();
             const scaleX = CANVAS_WIDTH / rect.width;
@@ -1419,7 +1224,6 @@ function doGet(e) {
             const mouseX = (e.clientX - rect.left) * scaleX;
             const mouseY = (e.clientY - rect.top) * scaleY;
 
-            // Check Text Elements Hit Test
             const keys = Object.keys(state.elements);
             for (let i = keys.length - 1; i >= 0; i--) {
                 const key = keys[i];
@@ -1456,9 +1260,6 @@ function doGet(e) {
             }
         }
 
-        /**
-         * Canvas Pointer Move
-         */
         function onPointerMove(e) {
             if (!state.isDragging) return;
             const rect = canvas.getBoundingClientRect();
@@ -1481,16 +1282,10 @@ function doGet(e) {
             renderCanvas();
         }
 
-        /**
-         * Canvas Pointer Up
-         */
         function onPointerUp() {
             state.isDragging = false;
         }
 
-        /**
-         * Helper: Get Position X/Y Setter
-         */
         function setElementX(key, xVal) {
             if (state.elements[key] && !state.elements[key].locked) {
                 state.elements[key].x = xVal;
@@ -1503,9 +1298,6 @@ function doGet(e) {
             }
         }
 
-        /**
-         * Move Active Element by Nudge Offset
-         */
         function moveActiveElement(dx, dy) {
             const key = state.activeKey;
             if (state.elements[key]) {
@@ -1519,9 +1311,6 @@ function doGet(e) {
             renderCanvas();
         }
 
-        /**
-         * Toggle Lock State for Active Selected Element
-         */
         function toggleLockActiveElement() {
             const key = state.activeKey;
             let isLocked = false;
@@ -1537,9 +1326,6 @@ function doGet(e) {
             showToast(isLocked ? 'ล็อคตำแหน่งเรียบร้อย (ลากย้ายไม่ได้)' : 'ปลดล็อคตำแหน่งแล้ว (ลากย้ายได้)');
         }
 
-        /**
-         * Update Form Data from Left Edit Box
-         */
         function updateCurrentDonorFromForm() {
             if (state.donors[state.selectedIndex]) {
                 state.donors[state.selectedIndex].serial = inputSerial.value;
@@ -1554,9 +1340,6 @@ function doGet(e) {
             }
         }
 
-        /**
-         * Load Selected Donor to Left Form Box
-         */
         function loadDonorToForm(index) {
             state.selectedIndex = index;
             const d = state.donors[index];
@@ -1572,9 +1355,6 @@ function doGet(e) {
             }
         }
 
-        /**
-         * Render Donor Table Rows
-         */
         function renderDonorTable() {
             donorCountText.textContent = state.donors.length;
             donorTableBody.innerHTML = '';
@@ -1582,7 +1362,6 @@ function doGet(e) {
             const q = state.searchQuery;
 
             state.donors.forEach((donor, idx) => {
-                // Filter check
                 if (q) {
                     const matchName = (donor.name || '').toLowerCase().includes(q);
                     const matchSerial = (donor.serial || '').toLowerCase().includes(q);
@@ -1597,9 +1376,13 @@ function doGet(e) {
                     ? '<span class="px-1 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[9px] font-bold">เงินสด</span>'
                     : '<span class="px-1 py-0.5 rounded bg-blue-100 text-blue-800 text-[9px] font-bold">เงินโอน</span>';
 
+                const newTag = donor.isNew 
+                    ? '<span class="ml-1 px-1 py-0.2 text-[8px] font-bold bg-amber-500 text-white rounded shrink-0">ใหม่</span>' 
+                    : '';
+
                 tr.innerHTML = `
                     <td class="py-1.5 px-2 text-center text-slate-500">${donor.serial || (idx + 1)}</td>
-                    <td class="py-1.5 px-2 text-slate-800 truncate max-w-[100px]">${donor.name || '-'}</td>
+                    <td class="py-1.5 px-2 text-slate-800 truncate max-w-[100px] flex items-center justify-between gap-1">${donor.name || '-'} ${newTag}</td>
                     <td class="py-1.5 px-2 text-amber-900 truncate max-w-[90px] text-[11px]">${donor.referrer || '-'}</td>
                     <td class="py-1.5 px-2 text-right text-emerald-700 font-medium">${donor.amountNum ? donor.amountNum.toLocaleString('en-US') : '0'}</td>
                     <td class="py-1.5 px-2 text-center">${payBadge}</td>
@@ -1621,7 +1404,6 @@ function doGet(e) {
                 donorTableBody.appendChild(tr);
             });
 
-            // Bind delete row buttons
             document.querySelectorAll('.btn-delete').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -1642,9 +1424,6 @@ function doGet(e) {
             });
         }
 
-        /**
-         * Sync Property Panel Controls with Active Selected Layer
-         */
         function updatePropertyPanel() {
             const key = state.activeKey;
             let currentLocked = false;
@@ -1670,7 +1449,6 @@ function doGet(e) {
                 btnToggleItalic.classList.toggle('bg-amber-200', !!el.italic);
             }
 
-            // Sync Lock Toggle Button Styling & State
             if (currentLocked) {
                 btnToggleLock.className = "px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition bg-rose-100 border border-rose-300 text-rose-800 hover:bg-rose-200";
                 lockIcon.className = "fa-solid fa-lock text-rose-600";
@@ -1682,11 +1460,7 @@ function doGet(e) {
             }
         }
 
-        /**
-         * Download Single Certificate Image
-         */
         function exportSingleImage() {
-            // Temporarily hide active selection border during capture
             const tempActiveKey = state.activeKey;
             state.activeKey = null;
             renderCanvas();
@@ -1698,16 +1472,12 @@ function doGet(e) {
             link.href = canvas.toDataURL('image/png', 1.0);
             link.click();
 
-            // Restore selection box
             state.activeKey = tempActiveKey;
             renderCanvas();
 
             showToast('ดาวน์โหลดใบอนุโมทนาบุญสำเร็จ');
         }
 
-        /**
-         * Download Batch Certificate Images Sequentially
-         */
         async function exportBatchImages() {
             const originalIndex = state.selectedIndex;
             const tempActiveKey = state.activeKey;
@@ -1727,11 +1497,9 @@ function doGet(e) {
                 link.href = canvas.toDataURL('image/png', 1.0);
                 link.click();
 
-                // Short delay between downloads
                 await new Promise(r => setTimeout(r, 400));
             }
 
-            // Restore state
             state.selectedIndex = originalIndex;
             state.activeKey = tempActiveKey;
             renderCanvas();
@@ -1739,9 +1507,6 @@ function doGet(e) {
             showToast(`ส่งออกใบอนุโมทนาครบทั้ง ${state.donors.length} รายการแล้ว`);
         }
 
-        /**
-         * Toast Notification Helper
-         */
         function showToast(msg, type = 'success') {
             const toast = document.getElementById('toast');
             const toastMsg = document.getElementById('toastMsg');
@@ -1763,7 +1528,6 @@ function doGet(e) {
             }, 3000);
         }
 
-        // Start App on Window Load
         window.onload = function() {
             initApp();
         };
