@@ -908,8 +908,19 @@ function doGet(e) {
             });
 
             btnAddDonor.addEventListener('click', () => {
-                const newId = state.donors.length + 1;
-                const newSerial = String(newId).padStart(3, '0');
+                // ค้นหาเลขลำดับสูงสุด (Max Serial) ที่มีอยู่ในรายการขณะนั้น
+                let maxSerial = 0;
+                state.donors.forEach(d => {
+                    const num = parseInt(d.serial, 10);
+                    if (!isNaN(num) && num > maxSerial) {
+                        maxSerial = num;
+                    }
+                });
+
+                // หากพบเลขสูงสุดให้นำมา +1 ถ้าไม่พบให้ใช้จำนวนรายการ +1
+                const nextSerialNum = maxSerial > 0 ? maxSerial + 1 : state.donors.length + 1;
+                const newSerial = String(nextSerialNum).padStart(3, '0');
+
                 state.donors.unshift({
                     id: Date.now(),
                     serial: newSerial,
