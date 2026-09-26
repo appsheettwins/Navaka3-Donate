@@ -365,12 +365,34 @@
                 </button>
             </div>
 
-            <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-xs space-y-1 text-emerald-900">
-                <p class="font-bold flex items-center gap-1">
-                    <i class="fa-solid fa-key text-emerald-700"></i> ID Google Sheet ปัจจุบัน:
+            <!-- Passcode Verification Panel (ล็อคการเข้าถึงเมนู) -->
+            <div id="gsAuthPanel" class="py-8 px-4 text-center space-y-4 bg-emerald-50/60 rounded-xl border border-emerald-200/80 my-2">
+                <div class="w-14 h-14 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto text-2xl border-2 border-emerald-300 shadow-inner">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-800 font-prompt text-base">ระบบรักษาความปลอดภัย</h3>
+                    <p class="text-xs text-slate-600 mt-1">กรุณากรอกรหัสผ่านเพื่อเข้าถึงเมนูจัดการ Google Sheet (เฉพาะผู้จัดทำ)</p>
+                </div>
+                <div class="max-w-xs mx-auto flex gap-2 pt-2">
+                    <input type="password" id="inputGsMenuPasscode" maxlength="4" class="w-full text-center text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono font-bold tracking-widest bg-white" placeholder="****">
+                    <button id="btnVerifyGsMenuPasscode" type="button" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs px-4 py-2.5 rounded-lg font-medium transition flex items-center gap-1.5 shrink-0 shadow">
+                        <i class="fa-solid fa-key"></i> ยืนยัน
+                    </button>
+                </div>
+                <p id="gsAuthErrorMsg" class="text-xs text-rose-600 font-medium hidden flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-circle-exclamation"></i> รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง
                 </p>
-                <code class="block font-mono bg-white p-2 rounded border border-emerald-300 select-all font-bold text-emerald-800 text-center text-sm">1ppxAhozZszl8_x8qRSy9EKTDhsgrx5RE8QW23k5CYTI</code>
             </div>
+
+            <!-- Protected Inner GS Modal Content -->
+            <div id="gsModalContent" class="space-y-4 hidden">
+                <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-xs space-y-1 text-emerald-900">
+                    <p class="font-bold flex items-center gap-1">
+                        <i class="fa-solid fa-key text-emerald-700"></i> ID Google Sheet ปัจจุบัน:
+                    </p>
+                    <code class="block font-mono bg-white p-2 rounded border border-emerald-300 select-all font-bold text-emerald-800 text-center text-sm">1ppxAhozZszl8_x8qRSy9EKTDhsgrx5RE8QW23k5CYTI</code>
+                </div>
 
             <!-- URL Configuration with Password Protection -->
             <div class="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
@@ -517,6 +539,7 @@ function doGet(e) {
                     </button>
                 </div>
             </details>
+            </div>
         </div>
     </div>
 
@@ -611,6 +634,7 @@ function doGet(e) {
             // Google Apps Script Web App URL & Security State
             gsScriptUrl: localStorage.getItem('anumodhana_gs_url') || DEFAULT_GS_URL,
             isUrlUnlocked: false,
+            isGsMenuAuthenticated: false,
             
             // Custom Background Image
             bgImage: null,
@@ -1129,9 +1153,56 @@ function doGet(e) {
                 });
             }
 
+            // Google Sheets Menu Passcode Auth (รหัสผ่าน 1129)
+            function verifyGsMenuPasscode() {
+                const inputPass = document.getElementById('inputGsMenuPasscode');
+                const errText = document.getElementById('gsAuthErrorMsg');
+                if (inputPass && inputPass.value.trim() === '1129') {
+                    state.isGsMenuAuthenticated = true;
+                    document.getElementById('gsAuthPanel').classList.add('hidden');
+                    document.getElementById('gsModalContent').classList.remove('hidden');
+                    if (errText) errText.classList.add('hidden');
+                    showToast('เข้าสู่เมนู Google Sheet เรียบร้อยแล้ว');
+                } else {
+                    if (errText) errText.classList.remove('hidden');
+                    showToast('รหัสผ่านไม่ถูกต้อง!', 'warning');
+                    if (inputPass) {
+                        inputPass.value = '';
+                        inputPass.focus();
+                    }
+                }
+            }
+
+            const btnVerifyGsMenuPasscode = document.getElementById('btnVerifyGsMenuPasscode');
+            const inputGsMenuPasscode = document.getElementById('inputGsMenuPasscode');
+
+            if (btnVerifyGsMenuPasscode) {
+                btnVerifyGsMenuPasscode.addEventListener('click', verifyGsMenuPasscode);
+            }
+            if (inputGsMenuPasscode) {
+                inputGsMenuPasscode.addEventListener('keyup', (e) => {
+                    if (e.key === 'Enter') verifyGsMenuPasscode();
+                });
+            }
+
             document.getElementById('btnGoogleSheetsModal').addEventListener('click', () => {
                 resetUrlLockState();
                 gsModal.classList.remove('hidden');
+
+                if (state.isGsMenuAuthenticated) {
+                    document.getElementById('gsAuthPanel').classList.add('hidden');
+                    document.getElementById('gsModalContent').classList.remove('hidden');
+                } else {
+                    document.getElementById('gsAuthPanel').classList.remove('hidden');
+                    document.getElementById('gsModalContent').classList.add('hidden');
+                    const passInput = document.getElementById('inputGsMenuPasscode');
+                    const errText = document.getElementById('gsAuthErrorMsg');
+                    if (errText) errText.classList.add('hidden');
+                    if (passInput) {
+                        passInput.value = '';
+                        setTimeout(() => passInput.focus(), 150);
+                    }
+                }
             });
 
             document.getElementById('btnCloseGsModal').addEventListener('click', () => {
