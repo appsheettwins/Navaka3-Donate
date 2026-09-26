@@ -346,6 +346,25 @@
 
     </main>
 
+    <!-- Initial Page Loading Overlay -->
+    <div id="initialLoadingModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md flex flex-col items-center justify-center z-50 transition-all duration-500">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center border border-amber-200/80 space-y-4 transform transition-all duration-300">
+            <div class="w-16 h-16 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center mx-auto text-3xl border-2 border-amber-400 shadow-md">
+                <i class="fa-solid fa-dharmachakra text-amber-700 animate-spin"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold font-prompt text-amber-950">กำลังเชื่อมต่อข้อมูล...</h3>
+                <p class="text-xs text-slate-500 mt-1">ระบบกำลังดึงข้อมูลรายชื่อล่าสุดจาก Google Sheet</p>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200">
+                <div class="bg-gradient-to-r from-amber-500 to-amber-700 h-full w-full animate-pulse"></div>
+            </div>
+            <p id="initialLoadingStatus" class="text-[11px] text-amber-800 font-medium bg-amber-50 py-1.5 px-3 rounded-full inline-block border border-amber-200">
+                <i class="fa-solid fa-cloud-arrow-down animate-bounce mr-1"></i> กำลังโหลดข้อมูลผู้ร่วมบุญ...
+            </p>
+        </div>
+    </div>
+
     <!-- Status Toast Notification -->
     <div id="toast" class="fixed bottom-5 right-5 bg-slate-900/90 text-white px-4 py-2.5 rounded-lg shadow-xl text-xs flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none z-50">
         <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
@@ -978,6 +997,26 @@ function doGet(e) {
             });
 
             btnAddDonor.addEventListener('click', () => {
+                // ตรวจสอบว่ามีรายการใหม่ที่ยังไม่ได้บันทึกลง Sheet หรือไม่
+                const hasUnsavedNew = state.donors.some(d => d.isNew);
+                if (hasUnsavedNew) {
+                    showToast('ต้องกด "บันทึกรายการใหม่ลง Sheet" ก่อน จึงจะเพิ่มรายชื่อใหม่ได้!', 'warning');
+                    const btnAppend = document.getElementById('btnAppendToSheet');
+                    if (btnAppend) {
+                        btnAppend.classList.add('ring-4', 'ring-amber-400', 'scale-105', 'transition-all');
+                        setTimeout(() => {
+                            btnAppend.classList.remove('ring-4', 'ring-amber-400', 'scale-105');
+                        }, 2000);
+                    }
+                    return;
+                }
+
+                // หากมีการกรองคำค้นหาค้างอยู่ ให้ล้างคำค้นหาเพื่อให้เห็นรายการใหม่ที่ถูกเพิ่มเข้ามา
+                if (state.searchQuery) {
+                    state.searchQuery = '';
+                    filterSearch.value = '';
+                }
+
                 // ค้นหาเลขลำดับสูงสุด (Max Serial) ที่มีอยู่ในรายการขณะนั้น
                 let maxSerial = 0;
                 state.donors.forEach(d => {
@@ -1350,10 +1389,21 @@ function doGet(e) {
             await checkGlobalUrlFromSheet();
 
             const syncBadge = document.getElementById('sheetSyncBadge');
+            const initialLoadingModal = document.getElementById('initialLoadingModal');
+
             if (syncBadge) {
                 syncBadge.classList.remove('hidden');
                 syncBadge.className = 'text-[10px] bg-amber-50 text-amber-800 px-2 py-0.5 rounded-full font-normal flex items-center gap-1 border border-amber-200';
                 syncBadge.innerHTML = '<i class="fa-solid fa-spinner animate-spin text-amber-600"></i> กำลังดึงข้อมูลอัตโนมัติ...';
+            }
+
+            function hideInitialModal() {
+                if (initialLoadingModal) {
+                    initialLoadingModal.classList.add('opacity-0', 'pointer-events-none');
+                    setTimeout(() => {
+                        initialLoadingModal.classList.add('hidden');
+                    }, 300);
+                }
             }
 
             if (!state.gsScriptUrl) {
@@ -1365,6 +1415,7 @@ function doGet(e) {
                 if (syncBadge) {
                     syncBadge.innerHTML = '<i class="fa-solid fa-circle-exclamation text-amber-600"></i> ไม่ได้เชื่อมต่อ Sheet';
                 }
+                hideInitialModal();
                 return;
             }
 
@@ -1404,7 +1455,7 @@ function doGet(e) {
                         syncBadge.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-600"></i> อัปเดตล่าสุดแล้ว (ล่าสุดอยู่บนสุด)';
                     }
                     
-                    showToast(`ดึงข้อมูลสำเร็จ! แสดงรายการล่าสุดไว้ด้านบนสุด (${resData.donors.length} รายการ)`);
+                    if (!isAutoLoad) showToast(`ดึงข้อมูลสำเร็จ! แสดงรายการล่าสุดไว้ด้านบนสุด (${resData.donors.length} รายการ)`);
                 } else {
                     ensureMinimumDonor();
                     if (syncBadge) {
@@ -1420,6 +1471,8 @@ function doGet(e) {
                     syncBadge.innerHTML = '<i class="fa-solid fa-circle-xmark text-rose-600"></i> โหลดข้อมูลล้มเหลว';
                 }
                 if (!isAutoLoad) showToast('ดึงข้อมูลไม่สำเร็จ ตรวจสอบ URL หรือสิทธิ์ Web App', 'warning');
+            } finally {
+                hideInitialModal();
             }
         }
 
