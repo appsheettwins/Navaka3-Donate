@@ -372,14 +372,38 @@
                 <code class="block font-mono bg-white p-2 rounded border border-emerald-300 select-all font-bold text-emerald-800 text-center text-sm">1ppxAhozZszl8_x8qRSy9EKTDhsgrx5RE8QW23k5CYTI</code>
             </div>
 
-            <div class="space-y-1.5">
-                <label class="block text-xs font-bold text-slate-700">URL ของ Google Apps Script Web App (สำหรับการส่งบันทึก):</label>
-                <div class="flex gap-2">
-                    <input type="text" id="inputGsUrl" class="flex-1 text-xs p-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-emerald-500 focus:outline-none" placeholder="https://script.google.com/macros/s/.../exec">
-                    <button id="btnSaveGsUrl" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-3.5 py-2 rounded-lg font-medium transition">
-                        บันทึก URL
+            <!-- URL Configuration with Password Protection -->
+            <div class="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <div class="flex items-center justify-between">
+                    <label class="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-link text-emerald-600"></i>
+                        URL ของ Google Apps Script Web App (สำหรับการส่งบันทึก):
+                    </label>
+                    <span id="urlLockStatus" class="text-[10px] bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1 border border-rose-200">
+                        <i class="fa-solid fa-lock"></i> ล็อคอยู่ (ต้องใช้รหัสผ่าน)
+                    </span>
+                </div>
+
+                <!-- Password Unlock Panel -->
+                <div id="urlUnlockPanel" class="flex items-center gap-2 bg-amber-50 p-2 rounded border border-amber-200">
+                    <i class="fa-solid fa-key text-amber-700 text-xs"></i>
+                    <span class="text-xs text-amber-900 font-medium whitespace-nowrap">ใส่รหัสผ่านเพื่อแก้ไข:</span>
+                    <input type="password" id="inputUrlPasscode" maxlength="4" class="w-20 text-xs p-1.5 text-center border border-amber-300 rounded focus:ring-1 focus:ring-amber-500 focus:outline-none bg-white font-mono font-bold" placeholder="****">
+                    <button id="btnVerifyUrlPasscode" type="button" class="bg-amber-800 hover:bg-amber-700 text-white text-xs px-3 py-1.5 rounded font-medium transition flex items-center gap-1 shadow-sm">
+                        <i class="fa-solid fa-unlock"></i> ปลดล็อค
                     </button>
                 </div>
+
+                <div class="flex gap-2">
+                    <input type="text" id="inputGsUrl" readonly class="flex-1 text-xs p-2 border border-slate-300 rounded-lg bg-slate-100 text-slate-500 cursor-not-allowed focus:outline-none font-mono" placeholder="https://script.google.com/macros/s/.../exec">
+                    <button id="btnSaveGsUrl" disabled class="bg-slate-400 text-white text-xs px-3.5 py-2 rounded-lg font-medium cursor-not-allowed transition flex items-center gap-1">
+                        <i class="fa-solid fa-floppy-disk"></i> บันทึก URL ทุกเครื่อง
+                    </button>
+                </div>
+                <p class="text-[10px] text-slate-500 flex items-center gap-1">
+                    <i class="fa-solid fa-circle-info text-blue-500"></i>
+                    เมื่อปลดล็อคและบันทึกแล้ว URL ใหม่จะอัปเดตไปยังคอมพิวเตอร์ทุกเครื่องที่เปิดใช้งานเว็บนี้โดยอัตโนมัติ
+                </p>
             </div>
 
             <div class="grid grid-cols-3 gap-2 border-t border-slate-100 pt-3">
@@ -413,11 +437,19 @@
                     <pre class="bg-slate-900 text-emerald-300 p-3 rounded text-[11px] font-mono overflow-x-auto max-h-56 leading-relaxed" id="scriptCodeText">
 function doPost(e) {
   try {
-    var sheet = SpreadsheetApp.openById('1ppxAhozZszl8_x8qRSy9EKTDhsgrx5RE8QW23k5CYTI').getActiveSheet();
+    var ss = SpreadsheetApp.openById('1ppxAhozZszl8_x8qRSy9EKTDhsgrx5RE8QW23k5CYTI');
+    var sheet = ss.getSheets()[0];
     var data = JSON.parse(e.postData.contents);
     
     // Header แถวที่ 1
     var headers = ['ลำดับ', 'ชื่อผู้ถวาย/ร่วมบุญ', 'จำนวนเงิน', 'ตัวอักษร', 'การชำระ', 'ผู้บอกบุญ', 'วันที่ทำบุญ'];
+
+    // กรณีที่ 0: บันทึกและซิงก์ URL ใหม่ไปยังแผ่นงาน Config (สำหรับอัปเดตทุกเครื่อง)
+    if (data.action === 'save_url' && data.url) {
+      var configSheet = ss.getSheetByName('Config') || ss.insertSheet('Config');
+      configSheet.getRange('A1').setValue(data.url);
+      return ContentService.createTextOutput(JSON.stringify({status: 'success', message: 'บันทึก URL ซิงก์ทุกเครื่องสำเร็จ'})).setMimeType(ContentService.MimeType.JSON);
+    }
 
     // กรณีที่ 1: บันทึกเฉพาะข้อมูลใหม่ต่อท้าย (Append Only) ไม่ลบอันเดิม
     if (data.action === 'append') {
@@ -446,8 +478,9 @@ function doPost(e) {
 
 function doGet(e) {
   try {
-    var sheet = SpreadsheetApp.openById('1ppxAhozZszl8_x8qRSy9EKTDhsgrx5RE8QW23k5CYTI').getActiveSheet();
-    var rows = sheet.getDisplayValues();
+    var ss = SpreadsheetApp.openById('1ppxAhozZszl8_x8qRSy9EKTDhsgrx5RE8QW23k5CYTI');
+    var sheet = ss.getSheets()[0];
+    var rows = sheet.getDataRange().getDisplayValues();
     var donors = [];
     for (var i = 1; i < rows.length; i++) {
       if (rows[i][1] || rows[i][0]) {
@@ -462,7 +495,19 @@ function doGet(e) {
         });
       }
     }
-    return ContentService.createTextOutput(JSON.stringify({status: 'success', donors: donors})).setMimeType(ContentService.MimeType.JSON);
+
+    // ดึง URL ล่าสุดจากแผ่นงาน Config
+    var currentUrl = '';
+    var configSheet = ss.getSheetByName('Config');
+    if (configSheet) {
+      currentUrl = configSheet.getRange('A1').getValue() || '';
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'success', 
+      donors: donors,
+      currentUrl: currentUrl
+    })).setMimeType(ContentService.MimeType.JSON);
   } catch(err) {
     return ContentService.createTextOutput(JSON.stringify({status: 'error', message: err.toString()})).setMimeType(ContentService.MimeType.JSON);
   }
@@ -551,7 +596,7 @@ function doGet(e) {
          */
         const todayStr = new Date().toISOString().split('T')[0];
         const GOOGLE_SHEET_ID = '1ppxAhozZszl8_x8qRSy9EKTDhsgrx5RE8QW23k5CYTI';
-        const DEFAULT_GS_URL = 'https://script.google.com/macros/s/AKfycbz8UmQ-zCzKINCDSVX0H9F4VejqpuOJg8GxNArhwpi4cZ36GJ62j8VxL4_FRZb9BokfbA/exec';
+        const DEFAULT_GS_URL = 'https://script.google.com/macros/s/AKfycbwZKSRSMa7jx0A99Iyv-x0kiI5pdfKGiLOZUaE-bKv_1ESXX6ht4DcoZiWP6pyFIc1w4g/exec';
 
         // Google Drive Background Template URL & ID
         const DEFAULT_BG_DRIVE_ID = '1XH14yN_eD9ooKvpHFJhH-SXZdgaYB5ru';
@@ -563,8 +608,9 @@ function doGet(e) {
             selectedIndex: 0,
             searchQuery: '',
             
-            // Google Apps Script Web App URL
+            // Google Apps Script Web App URL & Security State
             gsScriptUrl: localStorage.getItem('anumodhana_gs_url') || DEFAULT_GS_URL,
+            isUrlUnlocked: false,
             
             // Custom Background Image
             bgImage: null,
@@ -1018,9 +1064,73 @@ function doGet(e) {
 
             const gsModal = document.getElementById('gsModal');
             const inputGsUrl = document.getElementById('inputGsUrl');
-            inputGsUrl.value = state.gsScriptUrl;
+            const inputUrlPasscode = document.getElementById('inputUrlPasscode');
+            const btnVerifyUrlPasscode = document.getElementById('btnVerifyUrlPasscode');
+            const urlLockStatus = document.getElementById('urlLockStatus');
+            const urlUnlockPanel = document.getElementById('urlUnlockPanel');
+            const btnSaveGsUrl = document.getElementById('btnSaveGsUrl');
+
+            if (inputGsUrl) inputGsUrl.value = state.gsScriptUrl;
+
+            // Action Buttons for Sheet Sync Options
+            document.getElementById('btnAppendToSheet').addEventListener('click', () => syncSaveToGoogleSheet('append'));
+            document.getElementById('btnModalAppendSheet').addEventListener('click', () => syncSaveToGoogleSheet('append'));
+            document.getElementById('btnModalSaveSheet').addEventListener('click', () => syncSaveToGoogleSheet('save'));
+            document.getElementById('btnModalLoadSheet').addEventListener('click', syncLoadFromGoogleSheet);
+
+            function resetUrlLockState() {
+                state.isUrlUnlocked = false;
+                if (inputGsUrl) {
+                    inputGsUrl.value = state.gsScriptUrl;
+                    inputGsUrl.readOnly = true;
+                    inputGsUrl.className = "flex-1 text-xs p-2 border border-slate-300 rounded-lg bg-slate-100 text-slate-500 cursor-not-allowed focus:outline-none font-mono";
+                }
+                if (btnSaveGsUrl) {
+                    btnSaveGsUrl.disabled = true;
+                    btnSaveGsUrl.className = "bg-slate-400 text-white text-xs px-3.5 py-2 rounded-lg font-medium cursor-not-allowed transition flex items-center gap-1";
+                }
+                if (urlUnlockPanel) urlUnlockPanel.classList.remove('hidden');
+                if (urlLockStatus) {
+                    urlLockStatus.className = "text-[10px] bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1 border border-rose-200";
+                    urlLockStatus.innerHTML = '<i class="fa-solid fa-lock"></i> ล็อคอยู่ (ต้องใช้รหัสผ่าน)';
+                }
+                if (inputUrlPasscode) inputUrlPasscode.value = '';
+            }
+
+            function verifyPasscode() {
+                const code = inputUrlPasscode.value.trim();
+                if (code === '1129') {
+                    state.isUrlUnlocked = true;
+                    inputGsUrl.readOnly = false;
+                    inputGsUrl.className = "flex-1 text-xs p-2 border border-emerald-400 rounded-lg bg-white text-slate-800 cursor-text focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono font-semibold";
+                    
+                    btnSaveGsUrl.disabled = false;
+                    btnSaveGsUrl.className = "bg-emerald-700 hover:bg-emerald-600 text-white text-xs px-3.5 py-2 rounded-lg font-medium cursor-pointer transition flex items-center gap-1 shadow-sm";
+                    
+                    urlUnlockPanel.classList.add('hidden');
+                    urlLockStatus.className = "text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1 border border-emerald-300";
+                    urlLockStatus.innerHTML = '<i class="fa-solid fa-lock-open text-emerald-600"></i> ปลดล็อคแล้ว (รหัสถูกต้อง)';
+                    
+                    inputGsUrl.focus();
+                    showToast('รหัสผ่านถูกต้อง! สามารถแก้ไขและบันทึก URL ได้แล้ว');
+                } else {
+                    showToast('รหัสผ่านไม่ถูกต้อง!', 'warning');
+                    inputUrlPasscode.value = '';
+                    inputUrlPasscode.focus();
+                }
+            }
+
+            if (btnVerifyUrlPasscode) {
+                btnVerifyUrlPasscode.addEventListener('click', verifyPasscode);
+            }
+            if (inputUrlPasscode) {
+                inputUrlPasscode.addEventListener('keyup', (e) => {
+                    if (e.key === 'Enter') verifyPasscode();
+                });
+            }
 
             document.getElementById('btnGoogleSheetsModal').addEventListener('click', () => {
+                resetUrlLockState();
                 gsModal.classList.remove('hidden');
             });
 
@@ -1028,18 +1138,43 @@ function doGet(e) {
                 gsModal.classList.add('hidden');
             });
 
-            document.getElementById('btnSaveGsUrl').addEventListener('click', () => {
-                const url = inputGsUrl.value.trim() || DEFAULT_GS_URL;
+            btnSaveGsUrl.addEventListener('click', async () => {
+                if (!state.isUrlUnlocked) {
+                    showToast('กรุณาปลดล็อคด้วยรหัสผ่านก่อนบันทึก', 'warning');
+                    return;
+                }
+                const url = inputGsUrl.value.trim();
+                if (!url || !url.startsWith('https://')) {
+                    showToast('กรุณาระบุ URL ที่ถูกต้อง (ขึ้นต้นด้วย https://)', 'warning');
+                    return;
+                }
+
                 state.gsScriptUrl = url;
                 localStorage.setItem('anumodhana_gs_url', url);
-                showToast('บันทึก URL ของ Google Apps Script เรียบร้อย');
-            });
+                showToast('กำลังบันทึกและซิงก์ URL ไปยัง Google Sheet ทุกเครื่อง...');
 
-            // Action Buttons for Sheet Sync Options
-            document.getElementById('btnAppendToSheet').addEventListener('click', () => syncSaveToGoogleSheet('append'));
-            document.getElementById('btnModalAppendSheet').addEventListener('click', () => syncSaveToGoogleSheet('append'));
-            document.getElementById('btnModalSaveSheet').addEventListener('click', () => syncSaveToGoogleSheet('save'));
-            document.getElementById('btnModalLoadSheet').addEventListener('click', syncLoadFromGoogleSheet);
+                // ส่ง URL ใหม่ไปบันทึกใน Google Sheet (แผ่นงาน Config)
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: JSON.stringify({
+                            action: 'save_url',
+                            url: url,
+                            sheetId: GOOGLE_SHEET_ID
+                        })
+                    });
+                    const resData = await response.json();
+                    if (resData.status === 'success') {
+                        showToast('บันทึก URL ซิงก์ไปยังคอมพิวเตอร์ทุกเครื่องสำเร็จ!');
+                    } else {
+                        showToast('บันทึกในเครื่องเรียบร้อย (กรุณาอัปเดตสคริปต์ใน Sheet เพื่อซิงก์ข้ามเครื่อง)', 'warning');
+                    }
+                } catch(err) {
+                    console.warn(err);
+                    showToast('บันทึก URL ในเครื่องนี้เรียบร้อยแล้ว');
+                }
+            });
 
             document.getElementById('btnCopyScript').addEventListener('click', () => {
                 const codeText = document.getElementById('scriptCodeText').innerText;
@@ -1088,7 +1223,7 @@ function doGet(e) {
                 donorsToSave = [...state.donors].map(d => ({
                     ...d,
                     donationDate: formatDateYMD(d.donationDate)
-                })).reverse();
+                }));
             }
 
             try {
@@ -1096,24 +1231,43 @@ function doGet(e) {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify({
-                        action: actionType,
-                        sheetId: GOOGLE_SHEET_ID,
-                        donors: donorsToSave
+                        action: isAppend ? 'append' : 'save',
+                        donors: donorsToSave,
+                        sheetId: GOOGLE_SHEET_ID
                     })
                 });
 
                 const resData = await response.json();
                 if (resData.status === 'success') {
-                    // บันทึกสำเร็จแล้ว ปรับสถานะเป็นบันทึกแล้ว (isNew = false)
+                    showToast(isAppend ? 'บันทึกรายการใหม่ลง Google Sheet สำเร็จ!' : 'บันทึกทับข้อมูลทั้งหมดลง Google Sheet สำเร็จ!');
                     state.donors.forEach(d => { d.isNew = false; });
                     renderDonorTable();
-                    showToast(isAppend ? `บันทึกรายชื่อใหม่ ${donorsToSave.length} รายการลง Google Sheet สำเร็จ!` : 'บันทึกซิงก์ทับทั้งหมดสำเร็จ!');
                 } else {
-                    showToast('เกิดข้อผิดพลาด: ' + (resData.message || 'ไม่สามารถบันทึกได้'), 'warning');
+                    showToast('เกิดข้อผิดพลาดในการบันทึก: ' + (resData.message || 'ไม่ทราบสาเหตุ'), 'warning');
                 }
             } catch (err) {
                 console.error(err);
-                showToast('เชื่อมต่อล้มเหลว ตรวจสอบ URL หรือสิทธิ์ Google Apps Script', 'warning');
+                showToast('ไม่สามารถบันทึกข้อมูลได้ ตรวจสอบ URL หรืออินเทอร์เน็ต', 'warning');
+            }
+        }
+
+        async function checkGlobalUrlFromSheet() {
+            try {
+                const csvUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Config&t=${Date.now()}`;
+                const response = await fetch(csvUrl);
+                if (response.ok) {
+                    const csvText = await response.text();
+                    const cleanUrl = csvText.replace(/"/g, '').trim().split('\n')[0];
+                    if (cleanUrl && cleanUrl.startsWith('https://script.google.com/')) {
+                        if (cleanUrl !== state.gsScriptUrl) {
+                            state.gsScriptUrl = cleanUrl;
+                            localStorage.setItem('anumodhana_gs_url', cleanUrl);
+                            console.log('Auto-updated Web App URL from Config sheet CSV:', cleanUrl);
+                        }
+                    }
+                }
+            } catch(e) {
+                console.warn('Could not check Config tab directly:', e);
             }
         }
 
@@ -1121,6 +1275,9 @@ function doGet(e) {
          * Fetch Donors from Google Sheet via Apps Script
          */
         async function syncLoadFromGoogleSheet(isAutoLoad = false) {
+            // ดึง URL ล่าสุดจากแผ่นงาน Config ใน Google Sheet ก่อนเป็นอันดับแรก
+            await checkGlobalUrlFromSheet();
+
             const syncBadge = document.getElementById('sheetSyncBadge');
             if (syncBadge) {
                 syncBadge.classList.remove('hidden');
@@ -1148,6 +1305,14 @@ function doGet(e) {
 
                 const response = await fetch(fetchUrl);
                 const resData = await response.json();
+
+                // ตรวจสอบและอัปเดต URL หากใน Google Sheet ส่ง URL ล่าสุดกลับมา
+                if (resData.currentUrl && resData.currentUrl.startsWith('https://script.google.com/')) {
+                    if (resData.currentUrl !== state.gsScriptUrl) {
+                        state.gsScriptUrl = resData.currentUrl;
+                        localStorage.setItem('anumodhana_gs_url', resData.currentUrl);
+                    }
+                }
 
                 if (resData.status === 'success' && Array.isArray(resData.donors) && resData.donors.length > 0) {
                     const formatted = resData.donors.map(d => ({
