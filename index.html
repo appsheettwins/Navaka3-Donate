@@ -149,6 +149,14 @@
                     </div>
                 </div>
 
+                <!-- Unsaved Notice Banner below buttons -->
+                <div id="unsavedNotice" class="hidden mb-3 p-2.5 rounded-lg text-xs font-medium bg-amber-50 border border-amber-300 text-amber-900 flex items-center justify-between gap-2 shadow-sm transition-all">
+                    <div class="flex items-center gap-2">
+                        <i id="unsavedNoticeIcon" class="fa-solid fa-triangle-exclamation text-amber-600 text-sm shrink-0"></i>
+                        <span id="unsavedNoticeText">มีรายการใหม่ที่ยังไม่ได้บันทึกลง Sheet! กรุณากดปุ่ม <b>"บันทึกรายการใหม่ลง Sheet"</b></span>
+                    </div>
+                </div>
+
                 <!-- Input Form for Selected Donor -->
                 <div id="donorEditForm" class="bg-amber-50/50 p-3 rounded-lg border border-amber-200/80 mb-3 space-y-2.5">
                     <div class="flex justify-between items-center border-b border-amber-200/60 pb-1.5">
@@ -1000,13 +1008,12 @@ function doGet(e) {
                 // ตรวจสอบว่ามีรายการใหม่ที่ยังไม่ได้บันทึกลง Sheet หรือไม่
                 const hasUnsavedNew = state.donors.some(d => d.isNew);
                 if (hasUnsavedNew) {
+                    updateUnsavedNotice();
                     showToast('ต้องกด "บันทึกรายการใหม่ลง Sheet" ก่อน จึงจะเพิ่มรายชื่อใหม่ได้!', 'warning');
-                    const btnAppend = document.getElementById('btnAppendToSheet');
-                    if (btnAppend) {
-                        btnAppend.classList.add('ring-4', 'ring-amber-400', 'scale-105', 'transition-all');
-                        setTimeout(() => {
-                            btnAppend.classList.remove('ring-4', 'ring-amber-400', 'scale-105');
-                        }, 2000);
+                    const unsavedNotice = document.getElementById('unsavedNotice');
+                    if (unsavedNotice) {
+                        unsavedNotice.classList.add('ring-4', 'ring-rose-400');
+                        setTimeout(() => unsavedNotice.classList.remove('ring-4', 'ring-rose-400'), 2000);
                     }
                     return;
                 }
@@ -1046,6 +1053,7 @@ function doGet(e) {
                 renderDonorTable();
                 renderCanvas();
                 showToast('เพิ่มรายชื่อใหม่ไว้ด้านบนแล้ว (พร้อมบันทึกต่อท้าย)');
+                inputName.focus();
             });
 
             btnToggleLock.addEventListener('click', toggleLockActiveElement);
@@ -1299,6 +1307,35 @@ function doGet(e) {
         }
 
         /**
+         * Update warning banner below save button for unsaved donors or missing names
+         */
+        function updateUnsavedNotice() {
+            const unsavedNotice = document.getElementById('unsavedNotice');
+            const unsavedNoticeText = document.getElementById('unsavedNoticeText');
+            const unsavedNoticeIcon = document.getElementById('unsavedNoticeIcon');
+            if (!unsavedNotice) return;
+
+            const hasUnsaved = state.donors.some(d => d.isNew);
+            if (!hasUnsaved) {
+                unsavedNotice.classList.add('hidden');
+                return;
+            }
+
+            unsavedNotice.classList.remove('hidden');
+
+            const emptyNameCount = state.donors.filter(d => d.isNew && (!d.name || !d.name.trim())).length;
+            if (emptyNameCount > 0) {
+                unsavedNotice.className = "mb-3 p-2.5 rounded-lg text-xs font-medium bg-rose-50 border border-rose-300 text-rose-900 flex items-center justify-between gap-2 shadow-sm transition-all";
+                unsavedNoticeIcon.className = "fa-solid fa-circle-exclamation text-rose-600 text-sm shrink-0 animate-bounce";
+                unsavedNoticeText.innerHTML = `<b>คำเตือน:</b> มีรายการใหม่ยังไม่ได้ระบุ <b>"ชื่อผู้ถวาย / ร่วมบุญ"</b> กรุณากรอกชื่อก่อนกดบันทึกลง Sheet`;
+            } else {
+                unsavedNotice.className = "mb-3 p-2.5 rounded-lg text-xs font-medium bg-amber-50 border border-amber-300 text-amber-900 flex items-center justify-between gap-2 shadow-sm transition-all animate-pulse";
+                unsavedNoticeIcon.className = "fa-solid fa-triangle-exclamation text-amber-600 text-sm shrink-0";
+                unsavedNoticeText.innerHTML = `มีรายการใหม่ที่ยังไม่ได้บันทึกลง Sheet! กรุณากดปุ่ม <b>"บันทึกรายการใหม่ลง Sheet"</b> ด้านบน`;
+            }
+        }
+
+        /**
          * Save Donors to Google Sheet
          * @param {string} actionType - 'append' (บันทึกเฉพาะรายชื่อใหม่) หรือ 'save' (เขียนทับทั้งหมด)
          */
@@ -1321,6 +1358,26 @@ function doGet(e) {
                     return;
                 }
 
+                // ตรวจสอบห้ามบันทึกรายการที่ไม่ได้ระบุชื่อผู้ทำบุญ
+                const emptyNameIdx = donorsToSave.findIndex(d => !d.name || !d.name.trim());
+                if (emptyNameIdx !== -1) {
+                    const targetDonor = donorsToSave[emptyNameIdx];
+                    const globalIdx = state.donors.findIndex(d => d.id === targetDonor.id || (d.serial === targetDonor.serial && d.isNew));
+                    if (globalIdx !== -1) {
+                        state.selectedIndex = globalIdx;
+                        loadDonorToForm(globalIdx);
+                        renderDonorTable();
+                        renderCanvas();
+                    }
+                    inputName.focus();
+                    inputName.classList.add('ring-2', 'ring-rose-500');
+                    setTimeout(() => inputName.classList.remove('ring-2', 'ring-rose-500'), 3000);
+                    
+                    updateUnsavedNotice();
+                    showToast('ไม่สามารถบันทึกได้! กรุณากรอก "ชื่อผู้ถวาย/ร่วมบุญ" ให้เรียบร้อยก่อนบันทึกลง Sheet', 'warning');
+                    return;
+                }
+
                 // เรียงลำดับรายการใหม่จากรายการที่สร้างก่อนไปหลัง เพื่อลง Sheet ตามลำดับ
                 donorsToSave = [...donorsToSave].reverse().map(d => ({
                     ...d,
@@ -1329,6 +1386,18 @@ function doGet(e) {
 
                 showToast(`กำลังบันทึกเฉพาะรายชื่อใหม่ ${donorsToSave.length} รายการลง Google Sheet...`);
             } else {
+                // ตรวจสอบห้ามบันทึกหากมีรายการที่ยังไม่ได้ระบุชื่อ
+                const emptyNameIdx = state.donors.findIndex(d => !d.name || !d.name.trim());
+                if (emptyNameIdx !== -1) {
+                    state.selectedIndex = emptyNameIdx;
+                    loadDonorToForm(emptyNameIdx);
+                    renderDonorTable();
+                    renderCanvas();
+                    inputName.focus();
+                    showToast('ไม่สามารถบันทึกได้! กรุณากรอก "ชื่อผู้ถวาย/ร่วมบุญ" ของทุกรายการให้เรียบร้อย', 'warning');
+                    return;
+                }
+
                 showToast('กำลังเขียนทับข้อมูลทั้งหมดลง Google Sheet...');
                 donorsToSave = [...state.donors].map(d => ({
                     ...d,
@@ -1352,6 +1421,7 @@ function doGet(e) {
                     showToast(isAppend ? 'บันทึกรายการใหม่ลง Google Sheet สำเร็จ!' : 'บันทึกทับข้อมูลทั้งหมดลง Google Sheet สำเร็จ!');
                     state.donors.forEach(d => { d.isNew = false; });
                     renderDonorTable();
+                    updateUnsavedNotice();
                 } else {
                     showToast('เกิดข้อผิดพลาดในการบันทึก: ' + (resData.message || 'ไม่ทราบสาเหตุ'), 'warning');
                 }
@@ -1637,6 +1707,7 @@ function doGet(e) {
 
                 renderDonorTable();
                 renderCanvas();
+                updateUnsavedNotice();
             }
         }
 
@@ -1722,6 +1793,8 @@ function doGet(e) {
                     showToast('ลบรายการเรียบร้อย');
                 });
             });
+
+            updateUnsavedNotice();
         }
 
         function updatePropertyPanel() {
